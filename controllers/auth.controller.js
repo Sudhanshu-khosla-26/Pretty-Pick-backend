@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { sendEmail } = require('../utils/sendEmail');
 
-const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+const generateToken = (id) => jwt.sign({ id }, "PrettyPickEcommerceMobileApplication", { expiresIn: '7d' });
 
 exports.register = async (req, res) => {
   const { name, email, password } = req.body;
