@@ -7,13 +7,14 @@ exports.createProduct = async (req, res) => {
 
 exports.getAllProducts = async (req, res) => {
   const { keyword = '', category, min, max } = req.query;
-  let query = {
-    name: { $regex: keyword, $options: 'i' },
-    ...(category && { category }),
-    ...(min && max && { price: { $gte: min, $lte: max } })
-  };
-  const products = await Product.find(query);
-  res.json(products);
+  // let query = {
+  //   name: { $regex: keyword, $options: 'i' },
+  //   ...(category && { category }),
+  //   ...(min && max && { price: { $gte: min, $lte: max } })
+  // };
+  // const products = await Product.find(query);
+  const products = await Product.find();
+  res.json(products).status(200);
 };
 
 exports.updateProduct = async (req, res) => {

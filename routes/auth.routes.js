@@ -3,8 +3,10 @@ const {
   register,
   login,
   forgotPassword,
+  updateProfile,
   resetPassword
 } = require('../controllers/auth.controller');
+const { protect } = require('../middlewares/auth.middleware');
 
 // @route   POST /api/auth/register
 router.post('/register', register);
@@ -17,5 +19,7 @@ router.post('/forgot-password', forgotPassword);
 
 // @route   POST /api/auth/reset-password/:token
 router.post('/reset-password/:token', resetPassword);
+
+router.post("/update-profile", protect, updateProfile);
 
 module.exports = router;

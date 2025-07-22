@@ -3,12 +3,21 @@ const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
   name: String,
+  profilePicture: String,
   email: { type: String, unique: true },
   password: String,
   isAdmin: { type: Boolean, default: false },
   wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
   resetPasswordToken: String,
-  resetPasswordExpires: Date
+  resetPasswordExpires: Date,
+  pincode: String,
+  address: String,
+  city: String,
+  state: String,
+  country: String,
+  accountNumber: String,
+  accountHolder: String,
+  ifsc: String
 }, { timestamps: true });
 
 userSchema.pre('save', async function () {

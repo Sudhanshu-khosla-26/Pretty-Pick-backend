@@ -17,7 +17,9 @@ exports.login = async (req, res) => {
   if (!user || !(await user.matchPassword(password))) {
     return res.status(401).json({ message: 'Invalid credentials' });
   }
-  res.json({ user, token: generateToken(user._id) });
+
+  const token = await generateToken(user._id);
+  res.json({ user, token: token });
 };
 
 exports.forgotPassword = async (req, res) => {
@@ -47,4 +49,22 @@ exports.resetPassword = async (req, res) => {
   await user.save();
 
   res.json({ message: 'Password reset successful' });
+};
+
+
+exports.updateProfile = async (req, res) => {
+  const { profilePicture, pincode, address, city, state, country, accountNumber, accountHolder, ifsc } = req.body;
+  const userId = req.user ? req.user._id : req.body.userId;
+
+  try {
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { profilePicture, pincode, address, city, state, country, accountNumber, accountHolder, ifsc },
+      { new: true }
+    );
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json({ user });
+  } catch (err) {
+    res.status(500).json({ message: 'Error updating profile', error: err.message });
+  }
 };
