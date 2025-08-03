@@ -41,3 +41,12 @@ exports.removeFromCart = async (req, res) => {
   await cart.save();
   res.json(cart);
 };
+
+exports.clearCart = async (req, res) => {
+  const cart = await Cart.findOne({ user: req.user._id });
+  if (cart) {
+    cart.items = [];
+    await cart.save();
+  }
+  res.json({ message: 'Cart cleared' });
+}

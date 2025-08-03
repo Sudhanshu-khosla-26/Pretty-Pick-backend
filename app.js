@@ -10,6 +10,7 @@ const productRoutes = require('./routes/product.routes');
 const cartRoutes = require('./routes/cart.routes');
 const orderRoutes = require('./routes/order.routes');
 const couponRoutes = require('./routes/coupon.routes');
+const wishlistRoutes = require('./routes/wishlist.routes');
 const reviewRoutes = require('./routes/review.routes');
 
 const errorMiddleware = require('./middlewares/error.middleware');
@@ -29,6 +30,8 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/wishlist', wishlistRoutes);
+
 
 app.use(errorMiddleware);
 

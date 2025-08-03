@@ -9,8 +9,13 @@ const orderSchema = new mongoose.Schema({
   totalAmount: Number,
   status: { type: String, enum: ['Placed', 'Packed', 'Shipped', 'Delivered'], default: 'Placed' },
   deliveryAddress: {
-    street: String, city: String, state: String, pincode: String, phone: String
+    street: String, city: String, state: String, pincode: String
   }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Order', orderSchema);
+
+
+
+
+

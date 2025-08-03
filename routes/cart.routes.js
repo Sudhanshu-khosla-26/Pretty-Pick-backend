@@ -5,5 +5,6 @@ const { protect } = require('../middlewares/auth.middleware');
 router.get('/', protect, controller.getCart);
 router.post('/', protect, controller.addToCart);
 router.delete('/:productId', protect, controller.removeFromCart);
+router.post('/clear', protect, controller.clearCart);
 
 module.exports = router;
