@@ -3,6 +3,7 @@ const controller = require('../controllers/wishlist.controller');
 const { protect } = require('../middlewares/auth.middleware');
 
 router.get('/', protect, controller.getWishlist);
+router.post('/', protect, controller.addToWishlist);
 router.post('/:productId', protect, controller.addToWishlist);
 router.delete('/:productId', protect, controller.removeFromWishlist);
 

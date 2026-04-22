@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
 const morgan = require('morgan');
 const helmet = require('helmet');
@@ -12,6 +13,8 @@ const orderRoutes = require('./routes/order.routes');
 const couponRoutes = require('./routes/coupon.routes');
 const wishlistRoutes = require('./routes/wishlist.routes');
 const reviewRoutes = require('./routes/review.routes');
+const checkoutRoutes = require('./routes/checkout.routes');
+const requestLogger = require('./middlewares/request-logger.middleware');
 
 const errorMiddleware = require('./middlewares/error.middleware');
 
@@ -19,9 +22,18 @@ const app = express();
 
 app.use(cors({ origin: '*' }));
 app.use(express.json());
+app.use(requestLogger);
 app.use(morgan('dev'));
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 100 }));
+
+// Serve local product images (stored in src/assets) from /images/*
+app.use(
+	'/images',
+	express.static(path.join(__dirname, 'src', 'assets'), {
+		maxAge: '7d',
+	})
+);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -31,6 +43,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/checkout', checkoutRoutes);
 
 
 app.use(errorMiddleware);

@@ -4,7 +4,9 @@ const {
   login,
   forgotPassword,
   updateProfile,
-  resetPassword
+  resetPassword,
+  me,
+  logout
 } = require('../controllers/auth.controller');
 const { protect } = require('../middlewares/auth.middleware');
 
@@ -13,6 +15,12 @@ router.post('/register', register);
 
 // @route   POST /api/auth/login
 router.post('/login', login);
+
+// @route   GET /api/auth/me
+router.get('/me', protect, me);
+
+// @route   POST /api/auth/logout (optional)
+router.post('/logout', protect, logout);
 
 // @route   POST /api/auth/forgot-password
 router.post('/forgot-password', forgotPassword);

@@ -1,11 +1,18 @@
 const nodemailer = require('nodemailer');
 
 const createTransporter = () => {
+  const user = process.env.MAIL_USER;
+  const pass = process.env.MAIL_PASS;
+
+  if (!user || !pass) {
+    throw new Error('MAIL_USER/MAIL_PASS not configured in environment');
+  }
+
   return nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: 'akritika2004@gmail.com',
-      pass: "bozo emeo pbji nkxt"
+      user,
+      pass
     }
   });
 };
@@ -16,7 +23,7 @@ const sendEmail = async (options) => {
     const transporter = createTransporter();
 
     const mailOptions = {
-      from: `akritika2004@gmail.com`,
+      from: process.env.MAIL_USER,
       to: options.to,
       subject: options.subject,
       html: options.html

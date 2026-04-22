@@ -3,18 +3,41 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { sendEmail } = require('../utils/sendEmail');
 
-const generateToken = (id) => jwt.sign({ id }, "PrettyPickEcommerceMobileApplication", { expiresIn: '7d' });
+const generateToken = (id) => jwt.sign(
+  { id },
+  process.env.JWT_SECRET || 'BubbleBuyEcommerceMobileApplication',
+  { expiresIn: '7d' }
+);
+
+const toUserDTO = (userDoc) => ({
+  id: userDoc._id.toString(),
+  email: userDoc.email,
+  fullName: userDoc.fullName || userDoc.name || '',
+});
+
+const safeSendEmail = async (options) => {
+  try {
+    await sendEmail(options);
+  } catch (err) {
+    console.warn('Email send failed:', err.message);
+  }
+};
 
 exports.register = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { fullName, name, email, password } = req.body;
+    const resolvedFullName = fullName || name;
+
+    if (!resolvedFullName || !email || !password) {
+      return res.status(400).json({ message: 'fullName, email and password are required' });
+    }
 
     const oldUser = await User.findOne({ email });
     if (oldUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    const user = await User.create({ name, email, password });
+    const user = await User.create({ fullName: resolvedFullName, name: resolvedFullName, email, password });
 
     if (!user) {
       return res.status(500).json({ message: 'User registration failed' });
@@ -22,16 +45,16 @@ exports.register = async (req, res) => {
 
     const options = {
       to: email,
-      subject: '🎉 Welcome to Pretty Pick!',
+      subject: '🎉 Welcome to BubbleBuy!',
       html: `
       <div style="font-family: 'Segoe UI', Arial, sans-serif; background: #f9fafb; max-width: 520px; margin: 40px auto; padding: 32px 28px; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.07); border: 1px solid #ececec;">
         <div style="text-align: center; margin-bottom: 24px;">
-        <img src="https://i.imgur.com/4M7IWwP.png" alt="Pretty Pick Logo" style="width: 64px; height: 64px; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.06);" />
+        <img src="https://i.imgur.com/4M7IWwP.png" alt="BubbleBuy Logo" style="width: 64px; height: 64px; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.06);" />
         </div>
-        <h2 style="color: #2d3748; text-align: center; margin-bottom: 8px;">Welcome to <span style="color: #e75480;">Pretty Pick</span>!</h2>
+        <h2 style="color: #2d3748; text-align: center; margin-bottom: 8px;">Welcome to <span style="color: #e75480;">BubbleBuy</span>!</h2>
         <p style="color: #444; font-size: 17px;">Hi <b>${name}</b>,</p>
         <p style="color: #444; font-size: 16px; margin-bottom: 18px;">
-        Thank you for registering with <b>Pretty Pick</b>.<br>
+        Thank you for registering with <b>BubbleBuy</b>.<br>
         We're thrilled to have you join our community!
         </p>
         <div style="background: #e75480; color: #fff; border-radius: 8px; padding: 16px 18px; margin-bottom: 18px; text-align: center; font-size: 16px;">
@@ -43,15 +66,15 @@ exports.register = async (req, res) => {
         </p>
         <p style="color: #888; font-size: 14px; margin-top: 32px;">
         Best regards,<br/>
-        <span style="color: #e75480;">The Pretty Pick Team</span>
+        <span style="color: #e75480;">The BubbleBuy Team</span>
         </p>
       </div>
       `
     }
 
-    await sendEmail(options);
+    await safeSendEmail(options);
 
-    res.json({ user, token: generateToken(user._id) });
+    res.status(201).json({ token: generateToken(user._id), user: toUserDTO(user) });
   } catch (err) {
     res.status(500).json({ message: 'Registration failed', error: err.message });
   }
@@ -59,13 +82,23 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
   const { email, password } = req.body;
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email }).select('+password');
   if (!user || !(await user.matchPassword(password))) {
     return res.status(401).json({ message: 'Invalid credentials' });
   }
 
   const token = await generateToken(user._id);
-  res.json({ user, token: token });
+  res.json({ token, user: toUserDTO(user) });
+};
+
+exports.me = async (req, res) => {
+  if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+  res.json({ user: toUserDTO(req.user) });
+};
+
+exports.logout = async (req, res) => {
+  // Stateless JWT logout: client deletes token
+  res.json({ ok: true });
 };
 
 exports.forgotPassword = async (req, res) => {
@@ -77,16 +110,16 @@ exports.forgotPassword = async (req, res) => {
   user.resetPasswordExpires = Date.now() + 3600000;
   await user.save();
 
-  const resetUrl = `http://yourfrontend.com/reset-password/${token}`;
+  const resetUrl = `${VITE_APP_URL}/reset-password?token=${token}`;
   const options = {
     to: user.email,
-    subject: 'Reset Your Pretty Pick Password',
+    subject: 'Reset Your BubbleBuy Password',
     html: `
       <div style="font-family: 'Segoe UI', Arial, sans-serif; background: #f9fafb; max-width: 520px; margin: 40px auto; padding: 32px 28px; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.07); border: 1px solid #ececec;">
         <div style="text-align: center; margin-bottom: 24px;">
-          <img src="https://i.imgur.com/4M7IWwP.png" alt="Pretty Pick Logo" style="width: 64px; height: 64px; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.06);" />
+          <img src="https://i.imgur.com/4M7IWwP.png" alt="BubbleBuy Logo" style="width: 64px; height: 64px; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.06);" />
         </div>
-        <h2 style="color: #2d3748; text-align: center; margin-bottom: 8px;">Reset Your <span style="color: #e75480;">Pretty Pick</span> Password</h2>
+        <h2 style="color: #2d3748; text-align: center; margin-bottom: 8px;">Reset Your <span style="color: #e75480;">BubbleBuy</span> Password</h2>
         <p style="color: #444; font-size: 17px;">Hi <b>${user.name || 'there'}</b>,</p>
         <p style="color: #444; font-size: 16px; margin-bottom: 18px;">
           We received a request to reset your password.<br>
@@ -101,13 +134,13 @@ exports.forgotPassword = async (req, res) => {
         </p>
         <p style="color: #888; font-size: 14px; margin-top: 32px;">
           Best regards,<br/>
-          <span style="color: #e75480;">The Pretty Pick Team</span>S
+          <span style="color: #e75480;">The BubbleBuy Team</span>
         </p>
       </div>
     `
   };
 
-  await sendEmail(options);
+  await safeSendEmail(options);
   res.json({ message: 'Reset link sent to email' });
 };
 

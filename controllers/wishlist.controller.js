@@ -1,16 +1,36 @@
 
 const Wishlist = require('../models/wishlist.model');
+const { toAbsoluteUrl } = require('../utils/assetUrls');
+
+const toWishlistItemDTO = (productDocOrId, req) => {
+    if (!productDocOrId) return null;
+    if (typeof productDocOrId === 'string') {
+        return { productId: productDocOrId };
+    }
+    const obj = productDocOrId.toObject ? productDocOrId.toObject() : productDocOrId;
+    return {
+        productId: obj._id?.toString?.() || obj.id,
+        product: {
+            id: obj._id?.toString?.() || obj.id,
+            name: obj.name,
+            price: obj.price,
+            image: toAbsoluteUrl(req, obj.primaryImage || (obj.images && obj.images[0]) || null),
+        }
+    };
+};
 
 // GET /api/wishlist
 exports.getWishlist = async (req, res) => {
     const wishlist = await Wishlist.findOne({ user: req.user._id }).populate('products');
-    if (!wishlist) return res.json({ products: [] });
-    res.json({ products: wishlist.products });
+    if (!wishlist) return res.json({ items: [] });
+    const items = (wishlist.products || []).map((p) => toWishlistItemDTO(p, req)).filter(Boolean);
+    res.json({ items });
 };
 
-// POST /api/wishlist/:productId
+// POST /api/wishlist (preferred)
 exports.addToWishlist = async (req, res) => {
-    const { productId } = req.params;
+    const productId = req.body?.productId || req.params?.productId;
+    if (!productId) return res.status(400).json({ message: 'productId is required' });
     let wishlist = await Wishlist.findOne({ user: req.user._id });
 
     if (!wishlist) {
@@ -22,7 +42,9 @@ exports.addToWishlist = async (req, res) => {
     }
 
     await wishlist.save();
-    res.json({ message: 'Product added to wishlist', products: wishlist.products });
+    await wishlist.populate('products');
+    const added = wishlist.products.find(p => p._id.toString() === productId.toString()) || null;
+    res.json({ item: toWishlistItemDTO(added, req) });
 };
 
 // DELETE /api/wishlist/:productId
@@ -37,5 +59,5 @@ exports.removeFromWishlist = async (req, res) => {
     );
 
     await wishlist.save();
-    res.json({ message: 'Product removed from wishlist', products: wishlist.products });
+    res.json({ ok: true });
 };
